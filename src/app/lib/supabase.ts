@@ -10,4 +10,5 @@ export type DbApiKey = {
   name: string
   key: string
   monthly_limit: number | null
+  created_at: number
 }

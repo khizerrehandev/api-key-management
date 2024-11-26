@@ -8,10 +8,7 @@ interface ApiKey {
   id: string;
   name: string;
   key: string;
-  visibleKey: string;
-  usage: number;
   monthlyLimit?: number;
-  isVisible?: boolean;
   created_at: string;
 }
 
@@ -127,17 +124,7 @@ function Modal({ isOpen, onClose, apiKey, onSave }: ModalProps) {
 }
 
 export default function Dashboard() {
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>([
-    {
-      id: '1',
-      name: 'default',
-      key: 'tvly-**********************3j2k',
-      visibleKey: 'tvly-abcdef1234567890xyz3j2k',
-      usage: 0,
-      isVisible: false,
-      created_at: '2023-01-01T00:00:00'
-    }
-  ]);
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [editingKey, setEditingKey] = useState<ApiKey | null>(null);
   const [showNewKeyModal, setShowNewKeyModal] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '' });
@@ -157,6 +144,8 @@ export default function Dashboard() {
       .from('api_keys')
       .select('*');
 
+    console.log(data);
+
     if (error) {
       console.error('Error fetching API keys:', error);
       return;
@@ -166,10 +155,8 @@ export default function Dashboard() {
       id: key.id,
       name: key.name,
       key: generateObfuscatedKey(key.key),
-      visibleKey: key.key,
-      usage: 0,
       monthlyLimit: key.monthly_limit || undefined,
-      isVisible: false
+      created_at: key.created_at
     }));
 
     setApiKeys(formattedKeys);
@@ -309,15 +296,20 @@ export default function Dashboard() {
                 <th className="px-8 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Name</th>
                 <th className="px-8 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Usage</th>
                 <th className="px-8 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Key</th>
+                <th className="px-8 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Monthly Limit</th>
+                <th className="px-8 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Created At</th>
                 <th className="px-8 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Options</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800">
               {apiKeys.map((key) => (
+                console.log(key),
                 <tr key={key.id} className="hover:bg-gray-800/30">
                   <td className="px-8 py-5 whitespace-nowrap text-sm font-medium text-gray-200">{key.name}</td>
                   <td className="px-8 py-5 whitespace-nowrap text-sm text-gray-400">{key.usage}</td>
                   <td className="px-8 py-5 whitespace-nowrap text-sm font-mono text-gray-400">{key.key}</td>
+                  <td className="px-8 py-5 whitespace-nowrap text-sm font-mono text-gray-400">{key.monthlyLimit}</td>
+                  <td className="px-8 py-5 whitespace-nowrap text-sm font-mono text-gray-400">{new Date(key.created_at).toLocaleString()}</td>
                   <td className="px-8 py-5 whitespace-nowrap">
                     <div className="flex gap-6">
                       <button 
