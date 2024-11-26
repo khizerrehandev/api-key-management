@@ -1,5 +1,7 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
+import { supabase, type DbApiKey } from '../lib/supabase';
+import { Snackbar } from './components/Snackbar';
 
 interface ApiKey {
   id: string;
@@ -9,6 +11,7 @@ interface ApiKey {
   usage: number;
   monthlyLimit?: number;
   isVisible?: boolean;
+  created_at: string;
 }
 
 interface ModalProps {
@@ -130,11 +133,13 @@ export default function Dashboard() {
       key: 'tvly-**********************3j2k',
       visibleKey: 'tvly-abcdef1234567890xyz3j2k',
       usage: 0,
-      isVisible: false
+      isVisible: false,
+      created_at: '2023-01-01T00:00:00'
     }
   ]);
   const [editingKey, setEditingKey] = useState<ApiKey | null>(null);
   const [showNewKeyModal, setShowNewKeyModal] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '' });
 
   const generateObfuscatedKey = (fullKey: string) => {
     const prefix = fullKey.slice(0, 5);
@@ -142,32 +147,102 @@ export default function Dashboard() {
     return `${prefix}${'*'.repeat(20)}${suffix}`;
   };
 
-  const handleCreateKey = (keyData: Partial<ApiKey>) => {
+  useEffect(() => {
+    fetchApiKeys();
+  }, []);
+
+  const fetchApiKeys = async () => {
+    const { data, error } = await supabase
+      .from('api_keys')
+      .select('*');
+
+    if (error) {
+      console.error('Error fetching API keys:', error);
+      return;
+    }
+
+    const formattedKeys: ApiKey[] = data.map((key: DbApiKey) => ({
+      id: key.id,
+      name: key.name,
+      key: generateObfuscatedKey(key.key),
+      visibleKey: key.key,
+      usage: 0,
+      monthlyLimit: key.monthly_limit || undefined,
+      isVisible: false
+    }));
+
+    setApiKeys(formattedKeys);
+  };
+
+  const handleCreateKey = async (keyData: Partial<ApiKey>) => {
     const fullKey = `tvly-${Math.random().toString(36).substr(2, 20)}${Math.random().toString(36).substr(2, 4)}`;
-    const newKey = {
-      id: Math.random().toString(36).substring(7),
-      name: keyData.name || 'default',
+    
+    const { data, error } = await supabase
+      .from('api_keys')
+      .insert({
+        name: keyData.name || 'default',
+        key: fullKey,
+        monthly_limit: keyData.monthlyLimit
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating API key:', error);
+      return;
+    }
+
+    const newKey: ApiKey = {
+      id: data.id,
+      name: data.name,
       key: generateObfuscatedKey(fullKey),
       visibleKey: fullKey,
       usage: 0,
-      monthlyLimit: keyData.monthlyLimit,
+      monthlyLimit: data.monthly_limit,
       isVisible: false
     };
+
     setApiKeys([...apiKeys, newKey]);
+    setSnackbar({ open: true, message: 'API key created successfully' });
   };
 
-  const handleEditKey = (keyData: Partial<ApiKey>) => {
+  const handleEditKey = async (keyData: Partial<ApiKey>) => {
+    const { error } = await supabase
+      .from('api_keys')
+      .update({
+        name: keyData.name,
+        monthly_limit: keyData.monthlyLimit
+      })
+      .eq('id', editingKey?.id);
+
+    if (error) {
+      console.error('Error updating API key:', error);
+      return;
+    }
+
     setApiKeys(apiKeys.map(key => 
       key.id === editingKey?.id 
         ? { ...key, ...keyData }
         : key
     ));
+    setSnackbar({ open: true, message: 'API key updated successfully' });
   };
 
-  const handleDeleteKey = (id: string) => {
+  const handleDeleteKey = async (id: string) => {
     const confirmed = window.confirm('Are you sure you want to delete this API key? This action cannot be undone.');
     if (confirmed) {
+      const { error } = await supabase
+        .from('api_keys')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting API key:', error);
+        return;
+      }
+
       setApiKeys(apiKeys.filter(key => key.id !== id));
+      setSnackbar({ open: true, message: 'API key deleted successfully' });
     }
   };
 
@@ -302,6 +377,12 @@ export default function Dashboard() {
         onClose={() => setShowNewKeyModal(false)}
         apiKey={null}
         onSave={handleCreateKey}
+      />
+
+      <Snackbar
+        message={snackbar.message}
+        isOpen={snackbar.open}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
       />
     </>
   );
