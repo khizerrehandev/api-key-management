@@ -1,11 +1,11 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 interface ApiKey {
   id: string;
   name: string;
   key: string;
-  visibleKey: string;  // Full key
+  visibleKey: string;
   usage: number;
   monthlyLimit?: number;
   isVisible?: boolean;
@@ -19,39 +19,53 @@ interface ModalProps {
 }
 
 function Modal({ isOpen, onClose, apiKey, onSave }: ModalProps) {
-    console
-  const [name, setName] = useState(apiKey?.name || '');
-  const [monthlyLimit, setMonthlyLimit] = useState(apiKey?.monthlyLimit || 1000);
-  const [limitEnabled, setLimitEnabled] = useState(!!apiKey?.monthlyLimit);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const [name, setName] = useState('');
+  const [monthlyLimit, setMonthlyLimit] = useState(1000);
+  const [limitEnabled, setLimitEnabled] = useState(false);
+
+  // Reset form when apiKey changes
+  useEffect(() => {
+    if (apiKey) {
+      setName(apiKey.name);
+      setMonthlyLimit(apiKey.monthlyLimit || 1000);
+      setLimitEnabled(!!apiKey.monthlyLimit);
+    } else {
+      setName('');
+      setMonthlyLimit(1000);
+      setLimitEnabled(false);
+    }
+  }, [apiKey]);
 
   // Handle modal visibility
-  if (isOpen && dialogRef.current && !dialogRef.current.open) {
-    dialogRef.current.showModal();
-  } else if (!isOpen && dialogRef.current?.open) {
-    dialogRef.current.close();
-  }
+  useEffect(() => {
+    if (isOpen && dialogRef.current && !dialogRef.current.open) {
+      dialogRef.current.showModal();
+    } else if (!isOpen && dialogRef.current?.open) {
+      dialogRef.current.close();
+    }
+  }, [isOpen]);
 
   return (
     <dialog
       ref={dialogRef}
-      className="relative rounded-xl shadow-xl backdrop:bg-black/20 backdrop:backdrop-blur-sm border border-gray-200 p-0 max-w-md w-full"
+      className="relative rounded-xl shadow-xl backdrop:bg-black/20 backdrop:backdrop-blur-sm border border-gray-800 p-0 max-w-md w-full bg-gray-900"
       onClose={onClose}
     >
       <div className="p-6">
-        <h2 className="text-xl font-semibold mb-6">
+        <h2 className="text-xl font-semibold mb-6 text-gray-100">
           {apiKey ? 'Edit API key' : 'Create new API key'}
         </h2>
         <div className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Key Name — A unique name to identify this key.
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Key Name — A unique name to identify this key
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-100"
               placeholder="default"
             />
           </div>
@@ -62,9 +76,9 @@ function Modal({ isOpen, onClose, apiKey, onSave }: ModalProps) {
                 id="limitToggle"
                 checked={limitEnabled}
                 onChange={(e) => setLimitEnabled(e.target.checked)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="rounded border-gray-700 text-blue-600 focus:ring-blue-500 bg-gray-800"
               />
-              <label htmlFor="limitToggle" className="text-sm font-medium text-gray-700">
+              <label htmlFor="limitToggle" className="text-sm font-medium text-gray-300">
                 Limit monthly usage*
               </label>
             </div>
@@ -73,30 +87,31 @@ function Modal({ isOpen, onClose, apiKey, onSave }: ModalProps) {
                 type="number"
                 value={monthlyLimit}
                 onChange={(e) => setMonthlyLimit(Number(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-100"
                 placeholder="1000"
               />
             )}
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-gray-400">
               * If the combined usage of all your keys exceeds your plan's limit, all requests will be rejected.
             </p>
           </div>
           <div className="flex justify-end gap-3 mt-8">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg"
+              className="px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800 rounded-lg transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={() => {
                 onSave({
+                  ...(apiKey || {}),
                   name,
                   monthlyLimit: limitEnabled ? monthlyLimit : undefined,
                 });
                 onClose();
               }}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-800 rounded-lg"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
             >
               Save
             </button>
