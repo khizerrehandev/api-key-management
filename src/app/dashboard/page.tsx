@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { supabase, type DbApiKey } from '../lib/supabase';
 import { Snackbar } from './components/Snackbar';
+import { PlanBanner } from './components/PlanBanner';
 
 interface ApiKey {
   id: string;
@@ -278,7 +279,7 @@ export default function Dashboard() {
 
   return (
     <>
-      {/* ... existing banner code ... */}
+      <PlanBanner plan="Free" apiLimit={800} maxLimit={1000} />
 
       {/* API Keys Section */}
       <div className="max-w-[1600px] mx-auto px-8 py-10">
