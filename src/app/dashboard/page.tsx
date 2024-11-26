@@ -175,8 +175,15 @@ export default function Dashboard() {
   };
 
   const handleCreateKey = async (keyData: Partial<ApiKey>) => {
-    const fullKey = `tvly-${Math.random().toString(36).substr(2, 20)}${Math.random().toString(36).substr(2, 4)}`;
-    
+    // Generate a random API key with format: krehan-[20 random chars]-[4 char checksum]
+    // Note: This is a simple random string generator and does not guarantee uniqueness
+    // or include checksums. For production use, consider:
+    // - Using crypto.randomUUID() for guaranteed uniqueness
+    // - Adding a proper checksum algorithm (e.g. CRC32)
+    // - Storing generated keys in a unique-constrained DB column
+    const uniqueStr = Math.random().toString(36).substr(2, 20);
+    const checksumStr = Math.random().toString(36).substr(2, 4);
+    const fullKey = `krehan-${uniqueStr}-${checksumStr}`;
     const { data, error } = await supabase
       .from('api_keys')
       .insert({
