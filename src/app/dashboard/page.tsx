@@ -22,6 +22,12 @@ interface ModalProps {
   onSave: (key: Partial<ApiKey>) => void;
 }
 
+interface DeleteKeyDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}
+
 function Modal({ isOpen, onClose, apiKey, onSave }: ModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [name, setName] = useState('');
@@ -135,11 +141,56 @@ function Modal({ isOpen, onClose, apiKey, onSave }: ModalProps) {
   );
 }
 
+function DeleteKeyDialog({ isOpen, onClose, onConfirm }: DeleteKeyDialogProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    if (isOpen && dialogRef.current && !dialogRef.current.open) {
+      dialogRef.current.showModal();
+    } else if (!isOpen && dialogRef.current?.open) {
+      dialogRef.current.close();
+    }
+  }, [isOpen]);
+
+  return (
+    <dialog
+      ref={dialogRef}
+      className="relative rounded-xl shadow-xl backdrop:bg-black/20 backdrop:backdrop-blur-sm border border-gray-800 p-0 max-w-md w-full bg-gray-900"
+      onClose={onClose}
+    >
+      <div className="p-6">
+        <h2 className="text-xl font-semibold mb-4 text-gray-100">Delete API Key</h2>
+        <p className="text-gray-400 mb-6">
+          Are you sure you want to delete this API key? This action cannot be undone.
+        </p>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 rounded-lg"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              onConfirm();
+              onClose();
+            }}
+            className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-lg"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </dialog>
+  );
+}
+
 export default function Dashboard() {
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [editingKey, setEditingKey] = useState<ApiKey | null>(null);
   const [showNewKeyModal, setShowNewKeyModal] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '' });
+  const [deletingKeyId, setDeletingKeyId] = useState<string | null>(null);
 
   const generateObfuscatedKey = (fullKey: string) => {
     const prefix = fullKey.slice(0, 5);
@@ -233,21 +284,18 @@ export default function Dashboard() {
   };
 
   const handleDeleteKey = async (id: string) => {
-    const confirmed = window.confirm('Are you sure you want to delete this API key? This action cannot be undone.');
-    if (confirmed) {
-      const { error } = await supabase
-        .from('api_keys')
-        .delete()
-        .eq('id', id);
+    const { error } = await supabase
+      .from('api_keys')
+      .delete()
+      .eq('id', id);
 
-      if (error) {
-        console.error('Error deleting API key:', error);
-        return;
-      }
-
-      setApiKeys(apiKeys.filter(key => key.id !== id));
-      setSnackbar({ open: true, message: 'API key deleted successfully' });
+    if (error) {
+      console.error('Error deleting API key:', error);
+      return;
     }
+
+    setApiKeys(apiKeys.filter(key => key.id !== id));
+    setSnackbar({ open: true, message: 'API key deleted successfully' });
   };
 
   const toggleKeyVisibility = (id: string) => {
@@ -278,6 +326,10 @@ export default function Dashboard() {
     setShowNewKeyModal(false);
   };
 
+  const handleDeleteClick = (id: string) => {
+    setDeletingKeyId(id);
+  };
+
   return (
     <>
       <PlanBanner plan="Free" apiLimit={800} maxLimit={1000} />
@@ -303,29 +355,28 @@ export default function Dashboard() {
           </button>
         </div>
         
-        <div className="overflow-hidden rounded-xl border border-gray-100/20 bg-gray-900/50 backdrop-blur-sm">
-          <table className="min-w-full divide-y divide-gray-800">
+        <div className="overflow-x-auto rounded-xl border border-gray-100/20 bg-gray-900/50 backdrop-blur-sm">
+          <table className="w-full divide-y divide-gray-800">
             <thead>
               <tr className="bg-gray-900/50">
-                <th className="px-8 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Name</th>
-                <th className="px-8 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Usage</th>
-                <th className="px-8 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Key</th>
-                <th className="px-8 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Monthly Limit</th>
-                <th className="px-8 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Created At</th>
-                <th className="px-8 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Options</th>
+                <th className="px-4 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Name</th>
+                <th className="px-4 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Usage</th>
+                <th className="px-4 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Key</th>
+                <th className="px-4 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Monthly Limit</th>
+                <th className="px-4 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Created At</th>
+                <th className="px-4 py-4 text-right text-xs font-medium text-gray-400 uppercase tracking-wider w-[140px]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800">
               {apiKeys.map((key) => (
-                console.log(key),
                 <tr key={key.id} className="hover:bg-gray-800/30">
-                  <td className="px-8 py-5 whitespace-nowrap text-sm font-medium text-gray-200">{key.name}</td>
-                  <td className="px-8 py-5 whitespace-nowrap text-sm text-gray-400">{key.usage}</td>
-                  <td className="px-8 py-5 whitespace-nowrap text-sm font-mono text-gray-400">{key.key}</td>
-                  <td className="px-8 py-5 whitespace-nowrap text-sm font-mono text-gray-400">{key.monthlyLimit}</td>
-                  <td className="px-8 py-5 whitespace-nowrap text-sm font-mono text-gray-400">{new Date(key.created_at).toLocaleString()}</td>
-                  <td className="px-8 py-5 whitespace-nowrap">
-                    <div className="flex gap-6">
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-200">{key.name}</td>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-400">{key.usage}</td>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-mono text-gray-400">{key.key}</td>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-mono text-gray-400">{key.monthlyLimit}</td>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-mono text-gray-400">{new Date(key.created_at).toLocaleString()}</td>
+                  <td className="px-4 py-4 whitespace-nowrap text-right">
+                    <div className="flex justify-end items-center gap-2">
                       <button 
                         onClick={() => toggleKeyVisibility(key.id)}
                         className="text-gray-400 hover:text-gray-200 transition-colors"
@@ -361,13 +412,32 @@ export default function Dashboard() {
                         </svg>
                       </button>
                       <button 
-                        onClick={() => handleDeleteKey(key.id)}
-                        className="text-gray-500 hover:text-gray-900"
+                        onClick={() => handleDeleteClick(key.id)}
+                        className="text-gray-400 hover:text-red-500 transition-colors group relative"
                         title="Delete API key"
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        <svg 
+                          className="w-5 h-5" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth={2} 
+                            d="M3 6h18M9 6v12m6-12v12" 
+                          />
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth={2} 
+                            d="M4 6h16l-1 12H5L4 6z" 
+                          />
                         </svg>
+                        <span className="absolute hidden group-hover:block bg-gray-900 text-white text-xs py-1 px-2 rounded -top-8 -left-2 whitespace-nowrap">
+                          Delete key
+                        </span>
                       </button>
                     </div>
                   </td>
@@ -392,6 +462,16 @@ export default function Dashboard() {
         onClose={() => setShowNewKeyModal(false)}
         apiKey={null}
         onSave={handleCreateKey}
+      />
+
+      <DeleteKeyDialog
+        isOpen={!!deletingKeyId}
+        onClose={() => setDeletingKeyId(null)}
+        onConfirm={() => {
+          if (deletingKeyId) {
+            handleDeleteKey(deletingKeyId);
+          }
+        }}
       />
 
       <Snackbar
