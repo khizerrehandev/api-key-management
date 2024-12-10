@@ -8,6 +8,8 @@ interface ApiKey {
   id: string;
   name: string;
   key: string;
+  visibleKey: string;
+  isVisible?: boolean;
   monthlyLimit?: number;
   created_at: string;
 }
@@ -155,6 +157,7 @@ export default function Dashboard() {
       id: key.id,
       name: key.name,
       key: generateObfuscatedKey(key.key),
+      visibleKey: key.key,
       monthlyLimit: key.monthly_limit || undefined,
       created_at: key.created_at
     }));
