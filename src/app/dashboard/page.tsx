@@ -12,6 +12,7 @@ interface ApiKey {
   isVisible?: boolean;
   monthlyLimit?: number;
   created_at: string;
+  usage?: number;
 }
 
 interface ModalProps {
@@ -46,6 +47,15 @@ function Modal({ isOpen, onClose, apiKey, onSave }: ModalProps) {
       dialogRef.current.showModal();
     } else if (!isOpen && dialogRef.current?.open) {
       dialogRef.current.close();
+    }
+  }, [isOpen]);
+
+  // Add this useEffect to reset form when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
+      setName('');
+      setMonthlyLimit(1000);
+      setLimitEnabled(false);
     }
   }, [isOpen]);
 
@@ -167,11 +177,6 @@ export default function Dashboard() {
 
   const handleCreateKey = async (keyData: Partial<ApiKey>) => {
     // Generate a random API key with format: krehan-[20 random chars]-[4 char checksum]
-    // Note: This is a simple random string generator and does not guarantee uniqueness
-    // or include checksums. For production use, consider:
-    // - Using crypto.randomUUID() for guaranteed uniqueness
-    // - Adding a proper checksum algorithm (e.g. CRC32)
-    // - Storing generated keys in a unique-constrained DB column
     const uniqueStr = Math.random().toString(36).substr(2, 20);
     const checksumStr = Math.random().toString(36).substr(2, 4);
     const fullKey = `krehan-${uniqueStr}-${checksumStr}`;
@@ -180,7 +185,8 @@ export default function Dashboard() {
       .insert({
         name: keyData.name || 'default',
         key: fullKey,
-        monthly_limit: keyData.monthlyLimit
+        monthly_limit: keyData.monthlyLimit,
+        created_at: new Date().toISOString()
       })
       .select()
       .single();
@@ -195,8 +201,8 @@ export default function Dashboard() {
       name: data.name,
       key: generateObfuscatedKey(fullKey),
       visibleKey: fullKey,
-      usage: 0,
       monthlyLimit: data.monthly_limit,
+      created_at: data.created_at,
       isVisible: false
     };
 
@@ -265,6 +271,11 @@ export default function Dashboard() {
       console.error('Failed to copy API key:', err);
       setSnackbar({ open: true, message: 'Failed to copy API key' });
     }
+  };
+
+  const handleCloseEditModal = () => {
+    setEditingKey(null);
+    setShowNewKeyModal(false);
   };
 
   return (
@@ -370,7 +381,7 @@ export default function Dashboard() {
       {/* Edit Modal */}
       <Modal
         isOpen={!!editingKey}
-        onClose={() => setEditingKey(null)}
+        onClose={handleCloseEditModal}
         apiKey={editingKey}
         onSave={handleEditKey}
       />
