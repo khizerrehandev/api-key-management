@@ -38,23 +38,23 @@ export function CreateKeyDialog({
   return (
     <dialog
       ref={dialogRef}
-      className="relative rounded-xl shadow-xl backdrop:bg-black/20 backdrop:backdrop-blur-sm p-0 max-w-md w-full bg-white"
+      className="relative rounded-xl shadow-xl backdrop:bg-black/20 backdrop:backdrop-blur-sm border border-gray-800 p-0 max-w-md w-full bg-gray-900"
       onClose={onClose}
     >
       <div className="p-6">
-        <h2 className="text-xl font-semibold mb-6">
-          {mode === 'create' ? 'Create new API key' : 'Edit API key'}
+        <h2 className="text-xl font-semibold mb-6 text-white">
+          {mode === 'edit' ? 'Edit API key' : 'Create new API key'}
         </h2>
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Key Name — A unique name to identify this key
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-100"
               placeholder="default"
             />
           </div>
@@ -65,9 +65,9 @@ export function CreateKeyDialog({
                 id="limitToggle"
                 checked={limitEnabled}
                 onChange={(e) => setLimitEnabled(e.target.checked)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="rounded border-gray-700 text-blue-600 focus:ring-blue-500 bg-gray-800"
               />
-              <label htmlFor="limitToggle" className="text-sm font-medium text-gray-700">
+              <label htmlFor="limitToggle" className="text-sm font-medium text-gray-300">
                 Limit monthly usage*
               </label>
             </div>
@@ -76,18 +76,18 @@ export function CreateKeyDialog({
                 type="number"
                 value={monthlyLimit || ''}
                 onChange={(e) => setMonthlyLimit(Number(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-100"
                 placeholder="1000"
               />
             )}
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-gray-400">
               * If the combined usage of all your keys exceeds your plan's limit, all requests will be rejected.
             </p>
           </div>
-          <div className="flex justify-end gap-3 mt-6">
+          <div className="flex justify-end gap-3 mt-8">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg"
+              className="px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800 rounded-lg transition-colors"
             >
               Cancel
             </button>
@@ -96,9 +96,9 @@ export function CreateKeyDialog({
                 onConfirm(name, limitEnabled ? monthlyLimit : undefined);
                 onClose();
               }}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
             >
-              {mode === 'create' ? 'Create' : 'Save'}
+              {mode === 'edit' ? 'Save Changes' : 'Create Key'}
             </button>
           </div>
         </div>
